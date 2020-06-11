@@ -5,6 +5,8 @@
 #include <pwdman.h>
 #include <database.h>
 #include <command.h>
+#include <pwdman_response.h>
+
 #include <iter.h>
 
 static bool pwdman_storage_add(struct pwdman *temp)
@@ -104,17 +106,16 @@ void pwdman_request_handle(char *buf, int clientfd)
 	// call handler
 	if(commands[index].req_handle(&col) == -1) {
 		fprintf(stderr, "request_handle : Error\n" );
-		/*return is commented to write the error message to the client*/
-		// return;
+		pwdman_response_handle_error(&col);
+		return;
 	}
-	// pwdman_print_all();
+	// responses
 	
 	if(commands[index].res_handle(&col) == -1) {
-		fprintf(stderr, "request_handle : Error\n" );
+		fprintf(stderr, "response_handle : Error\n" );
 		return;
 	}
 
-	// responses
 }
 
 bool pwdman_add(struct request *req)
@@ -171,7 +172,7 @@ bool pwdman_find_by_site(struct request *req, List *list)
 
 	sprintf(sql, sql_buf, request_param_get(req, "site"));
 
-	return database_select(sql, (void *)list, callback);
+	return database_select(sql, (void *)list, callback) && list->size;
 }
 
 bool pwdman_find_by_id(struct request *req, List *list)
@@ -181,14 +182,14 @@ bool pwdman_find_by_id(struct request *req, List *list)
 
 	sprintf(sql, sql_buf, atoi(request_param_get(req, "id")));
 
-	return database_select(sql, (void *)list, callback);
+	return database_select(sql, (void *)list, callback) && list->size;
 }
 
 bool pwdman_get_list(List *list)
 {
 	const char sql[] = "SELECT * FROM " TABLE ;
 
-	return database_select(sql, (void *)list, callback);
+	return database_select(sql, (void *)list, callback) && list->size;
 }
 
 bool pwdman_count_by_id(struct request *req)

@@ -6,11 +6,6 @@ int main(int argc, char const *argv[])
 {
 	int sockfd, maxfd, nready, buflen, nread;
 	fd_set rset, allset;
-	// char buf[] =
-	// 	"GET /find\n"
-	// 	"content-len: 10\n\n"
-	// 	"id=ab\n"
-	// 	"type=id\n\n";
 	struct request req = {0};
 	char buf[MAXLINE], read_buf[MAXLINE];
 
@@ -25,11 +20,8 @@ int main(int argc, char const *argv[])
 	}
 	
 	if ((buflen = request_prepare(&req, buf, sizeof(buf))) == -1) {
-		fprintf(stderr, "request_prepare : Error\n");
 		return -1;
 	} 
-
-	puts(buf);
 
 	write(sockfd, buf, strlen(buf));
 

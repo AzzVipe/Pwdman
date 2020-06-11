@@ -38,6 +38,11 @@ int command_handle(struct request *req, const char **argv, int argc, char *buf)
 	int index, buflen;
 	char req_buf[BUFFSIZE];
 
+	if (argc < 2) {
+		fprintf(stderr, "Usage : ./client <command> <arguments>\n");
+		return -1;
+	}
+
 	// check the uri and invoke the corresponding cmd handler
 	if ((index = command_get_index(argv[1], BY_CMD)) == -1) {
 		fprintf(stderr, "Invaild Command : %s\n", argv[1]);
@@ -48,10 +53,8 @@ int command_handle(struct request *req, const char **argv, int argc, char *buf)
 	request_uri_set(req, commands[index].uri);
 
 	// call handler
-	if(commands[index].cmd_handle(req, argv, argc) == -1) {
-		fprintf(stderr, "command_handle : Error\n" );
+	if(commands[index].cmd_handle(req, argv, argc) == -1)
 		return -1;
-	}
 
 	return 0;
 
@@ -200,6 +203,7 @@ cleanup:
 
 int command_handle_find(struct request *req, const char **argv, int argc)
 {
+	// TODO
 	if (argc != FIND_CMD_ARGS) {
 		fprintf(stderr, "Invaild Arguments \n");
 		return -1;
@@ -213,15 +217,20 @@ int command_handle_find(struct request *req, const char **argv, int argc)
 
 	for (int i = 0; i < FIND_TYPES; ++i)
 	{
-		if ((strcmp(param, finds[i]) != 0) || (command_validate_find_value(value, i)) != 0) {
-			fprintf(stderr, "Invaild Parameters \n");
-			return -1;
+		if (strcmp(param, finds[i]) == 0) {
+			if (command_validate_find_value(value, i) == -1) {
+				fprintf(stderr, "Invaild Parameters\n");
+				return -1;
+			}
+			request_param_set(req, "type", param);	
+			request_param_set(req, param, value);	
+
+			return 0;
 		}
-		request_param_set(req, "type", param);	
-		request_param_set(req, param, value);	
 	}
 
-	return 0;
+	return -1;
+
 }
 
 int command_handle_print(struct request *req, const char **argv, int argc)
@@ -296,14 +305,17 @@ static int command_validate_find_value(char *value, int mode)
 		case 0 :
 			if (!validate_number(value))
 				return -1;
+				break;
 
 		case 1 :
 			if (!validate_site(value))
 				return -1;
+				break;
 
 		case 2 :
 			if (!validate_email(value))
 				return -1;
+				break;
 
 		return 0;
 	}
