@@ -5,9 +5,8 @@
 #include <stdbool.h>
 #include <request.h>
 
-#define BUFFSIZE  1024
-#define TABLE    "info"
-#define DB_NAME  ".pwdman.db"
+#define BUFFSIZE   1024
+#define INFO_TABLE "info"
 
 #define PWDMAN_ADD    1
 #define PWDMAN_UPDATE 2
@@ -43,7 +42,6 @@ bool pwdman_delete(struct request *req);
 bool pwdman_find_by_email(struct request *req, List *list);
 bool pwdman_find_by_site(struct request *req, List *list);
 bool pwdman_find_by_id(struct request *req, List *list);
-bool pwdman_get_list(List *list);
 List *pwdman_print_all(void);
 
 bool pwdman_count_by_id(struct request *req);

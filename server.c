@@ -1,14 +1,24 @@
-#include <sock_lib.h>
-#include <pwdman.h>
 #include <sys/un.h>
+#include <sys/stat.h>
+#include <error.h>
+#include <sock_lib.h>
+#include <database.h>
+#include <user.h>
+#include <pwdman.h>
 
-int main()
+void server_init(void);
+
+int main(int argc, char *argv[])
 {
+	int is_set;
 	int listenfd, connfd, bytes_read, maxfd;
 	int clients[FD_SETSIZE], nready;
 	char buf[MAXLINE];
 	fd_set allset, rset;
 
+	server_init();
+	Daemon_init(argv[0]);
+	
 	listenfd = Uxd_listen(UNIXPATH);
 	if (listenfd == -1) {
 		perror("listenfd");
@@ -23,7 +33,6 @@ int main()
 	for (int i = 0; i < FD_SETSIZE; ++i)
 		clients[i] = -1;
 	
-
 	for (; ;)
 	{
 		rset = allset;
@@ -64,4 +73,15 @@ int main()
 	}
 
 	return 0;
+}
+
+void server_init(void)
+{
+	struct stat stats;
+	char *filename = database_get_name();
+
+	if (stat(filename, &stats) == -1 && errno == ENOENT) {
+		database_create_app();
+		user_init();
+	}
 }

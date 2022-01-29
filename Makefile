@@ -2,20 +2,20 @@ CC=gcc
 SRCSPATH=src
 LIBSPATH=lib
 OBJSPATH=obj
-CFLAGS=-Iinclude
-OBJS=$(OBJSPATH)/pwdman.o $(OBJSPATH)/database.o $(OBJSPATH)/command.o \
+CFLAGS=-Iinclude -Ilib/
+
+OBJS=$(OBJSPATH)/pwdman.o $(OBJSPATH)/user.o $(OBJSPATH)/database.o $(OBJSPATH)/command.o \
 	$(OBJSPATH)/pwdman_request.o $(OBJSPATH)/pwdman_response.o
+
 LIBS=$(LIBSPATH)/sock_lib.o $(LIBSPATH)/sqlite3.o $(LIBSPATH)/list.o $(LIBSPATH)/iter.o \
 	$(LIBSPATH)/request.o $(LIBSPATH)/str.o $(LIBSPATH)/validator.o $(OBJS)
-CFLAGS+=-fPIE
 CFLAGS+=-g
-CLI_LIBS=$(OBJSPATH)/command.o $(OBJSPATH)/pwdman.o $(OBJSPATH)/pwdman_request.o  \
-	$(LIBSPATH)/sock_lib.o $(LIBSPATH)/request.o $(LIBSPATH)/str.o $(LIBSPATH)/validator.o \
-	$(OBJSPATH)/pwdman_response.o
 
 all: objects server client
 
-objects: pwdman database pwdman_request pwdman_response command
+alls: clean objects server client
+
+objects: pwdman database pwdman_request pwdman_response command user
 
 server_old: server_old.c  
 	$(CC) -o server_old server_old.c $(CFLAGS) $(LIBS) -lpthread -lm -ldl
@@ -28,6 +28,9 @@ client: client.c
 
 pwdman: $(SRCSPATH)/pwdman.c
 	$(CC) -c -o $(OBJSPATH)/pwdman.o $(SRCSPATH)/pwdman.c $(CFLAGS)
+
+user: $(SRCSPATH)/user.c
+	$(CC) -c -o $(OBJSPATH)/user.o $(SRCSPATH)/user.c $(CFLAGS)
 
 command: $(SRCSPATH)/command.c
 	$(CC) -c -o $(OBJSPATH)/command.o $(SRCSPATH)/command.c $(CFLAGS)

@@ -6,3 +6,4 @@ obj/
 .pwdman.db
 .*
 !.gitignore
+*.o

@@ -38,7 +38,7 @@ int command_handle(struct request *req, const char **argv, int argc, char *buf)
 	int index, buflen;
 	char req_buf[BUFFSIZE];
 
-	if (argc < 2) {
+	if (argc < 2 ) {
 		fprintf(stderr, "Usage : ./client <command> <arguments>\n");
 		return -1;
 	}
@@ -65,7 +65,7 @@ int command_handle_add(struct request *req, const char **argv, int argc)
 	int err_count = 0;
 
 	if (argc != ADD_CMD_ARGS) {
-		fprintf(stderr, "Invaild Arguments \n");
+		fprintf(stderr, "Invaild Arguments \nUsage : ./client add <site> <email> <password>\n");
 		return -1;
 	}
 
@@ -239,6 +239,11 @@ int command_handle_print(struct request *req, const char **argv, int argc)
 		return 0;
 	else
 		return -1;
+}
+
+int command_handle_init(struct request *req, const char **argv, int argc)
+{
+	return 0;
 }
 
 int command_get_index(const char *cmd, int flags)
