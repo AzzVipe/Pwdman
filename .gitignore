@@ -1,9 +1,10 @@
 client
 server
 objs_refresh.sh
-server_old.c
 obj/
 .pwdman.db
 .*
 !.gitignore
 *.o
+test.c
+pwdman

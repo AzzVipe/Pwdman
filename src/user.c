@@ -1,11 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <crypt.h>
 
 #include <user.h>
 #include <iter.h>
 #include <database.h>
 #include <command.h>
+
+#define CRYPT_SALT "Aa"
 
 struct user user = {0};
 
@@ -14,16 +17,29 @@ static bool user_update(struct user *temp);
 
 void user_init(void)
 {
+	struct crypt_data temp;
 	char username[32], password[32];
+
+	memset(&temp, 0, sizeof(struct crypt_data));
 
 	printf("Enter Username : ");
 	fgets(username, 32, stdin);
+
+	while (!username) {
+		fprintf(stderr, "Invalid Username, enter again: ");
+		fgets(username, 32, stdin);
+	}
 
 	printf("Enter Passsword : ");
 	fgets(password, 32, stdin);
 
 	user.username = strdup(username);
-	user.password = strdup(password);
+
+	if (!(user.password = crypt_r(password, CRYPT_SALT, &temp))) {
+		perror("crypt_r error");
+
+		return;
+	}
 
 	user_add(&user);
 }

@@ -17,7 +17,7 @@
 
 const struct command commands[] = {
 	{"add"    , "/add"    , command_handle_add    , pwdman_request_handle_add    , pwdman_response_handle_cud },
-	{"delete" , "/del"    , command_handle_del    , pwdman_request_handle_del    , pwdman_response_handle_cud },
+	{"delete" , "/delete" , command_handle_del    , pwdman_request_handle_del    , pwdman_response_handle_cud },
 	{"update" , "/update" , command_handle_update , pwdman_request_handle_update , pwdman_response_handle_cud },
 	{"find"   , "/find"   , command_handle_find   , pwdman_request_handle_find   , pwdman_response_handle_print },
 	{"print"  , "/print"  , command_handle_print  , pwdman_request_handle_print  , pwdman_response_handle_print },
@@ -39,7 +39,7 @@ int command_handle(struct request *req, const char **argv, int argc, char *buf)
 	char req_buf[BUFFSIZE];
 
 	if (argc < 2 ) {
-		fprintf(stderr, "Usage : ./client <command> <arguments>\n");
+		// fprintf(stderr, "Usage : ./client <command> <arguments>\n");
 		return -1;
 	}
 
@@ -325,3 +325,12 @@ static int command_validate_find_value(char *value, int mode)
 		return 0;
 	}
 }
+
+/*
+	1) add <site> <email> <password>
+	2) update <id> <new site> <new email> <new password>
+	3) find <id> || <site> || <email>
+	4) print
+	5) delete <id>
+
+*/

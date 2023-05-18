@@ -1,13 +1,12 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
 
-#include <iter.h>
-#include <pwdman.h>
-#include <database.h>
-#include <command.h>
-#include <pwdman_response.h>
-
+#include<iter.h>
+#include<pwdman.h>
+#include<database.h>
+#include<command.h>
+#include<pwdman_response.h>
 
 static bool pwdman_storage_add(struct pwdman *temp);
 static bool pwdman_storage_update(struct pwdman *temp);

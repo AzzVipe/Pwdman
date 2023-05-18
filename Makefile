@@ -2,7 +2,7 @@ CC=gcc
 SRCSPATH=src
 LIBSPATH=lib
 OBJSPATH=obj
-CFLAGS=-Iinclude -Ilib/
+CFLAGS=-Iinclude -Ilib/ 
 
 OBJS=$(OBJSPATH)/pwdman.o $(OBJSPATH)/user.o $(OBJSPATH)/database.o $(OBJSPATH)/command.o \
 	$(OBJSPATH)/pwdman_request.o $(OBJSPATH)/pwdman_response.o
@@ -13,18 +13,16 @@ CFLAGS+=-g
 
 all: objects server client
 
-alls: clean objects server client
-
 objects: pwdman database pwdman_request pwdman_response command user
 
 server_old: server_old.c  
 	$(CC) -o server_old server_old.c $(CFLAGS) $(LIBS) -lpthread -lm -ldl
 
 server: server.c  
-	$(CC) -o server server.c $(CFLAGS) $(LIBS) -lpthread -lm -ldl
+	$(CC) -o server server.c $(CFLAGS) $(LIBS) -lpthread -lm -ldl -lcrypt
 
 client: client.c  
-	$(CC) -o client client.c $(CFLAGS) $(LIBS) -lpthread -lm -ldl
+	$(CC) -o client client.c $(CFLAGS) $(LIBS) -lpthread -lm -ldl -lcrypt
 
 pwdman: $(SRCSPATH)/pwdman.c
 	$(CC) -c -o $(OBJSPATH)/pwdman.o $(SRCSPATH)/pwdman.c $(CFLAGS)

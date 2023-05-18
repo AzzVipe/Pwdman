@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
 	fd_set allset, rset;
 
 	server_init();
-	Daemon_init(argv[0]);
+	// Daemon_init(argv[0]);
 	
 	listenfd = Uxd_listen(UNIXPATH);
 	if (listenfd == -1) {
