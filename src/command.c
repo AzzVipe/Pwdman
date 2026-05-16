@@ -6,12 +6,12 @@
 #include <pwdman_request.h>
 #include <pwdman_response.h>
 #include <validator.h>
- 
-#define ADD_CMD_ARGS    5
-#define DEL_CMD_ARGS    3
+
+#define ADD_CMD_ARGS 5
+#define DEL_CMD_ARGS 3
 #define UPDATE_CMD_ARGS 6
-#define PRINT_CMD_ARGS  2
-#define FIND_CMD_ARGS   4
+#define PRINT_CMD_ARGS 2
+#define FIND_CMD_ARGS 4
 
 #define FIND_TYPES 3
 
@@ -20,13 +20,13 @@ const struct command commands[] = {
 	{"delete" , "/delete" , command_handle_del    , pwdman_request_handle_del    , pwdman_response_handle_cud },
 	{"update" , "/update" , command_handle_update , pwdman_request_handle_update , pwdman_response_handle_cud },
 	{"find"   , "/find"   , command_handle_find   , pwdman_request_handle_find   , pwdman_response_handle_print },
-	{"print"  , "/print"  , command_handle_print  , pwdman_request_handle_print  , pwdman_response_handle_print },
+	{"list"  , "/list"    , command_handle_print  , pwdman_request_handle_print  , pwdman_response_handle_print },
 	{NULL     , NULL      , NULL                  , NULL                         , NULL }
 };
 
 const char finds[FIND_TYPES][32] = {
 	"id",
-	"site", 
+	"site",
 	"email"
 };
 
@@ -38,8 +38,8 @@ int command_handle(struct request *req, const char **argv, int argc, char *buf)
 	int index, buflen;
 	char req_buf[BUFFSIZE];
 
-	if (argc < 2 ) {
-		// fprintf(stderr, "Usage : ./client <command> <arguments>\n");
+	if (argc < 2) {
+		fprintf(stderr, "Usage : ./client <command> <arguments>\n");
 		return -1;
 	}
 
@@ -53,11 +53,10 @@ int command_handle(struct request *req, const char **argv, int argc, char *buf)
 	request_uri_set(req, commands[index].uri);
 
 	// call handler
-	if(commands[index].cmd_handle(req, argv, argc) == -1)
+	if (commands[index].cmd_handle(req, argv, argc) == -1)
 		return -1;
 
 	return 0;
-
 }
 
 int command_handle_add(struct request *req, const char **argv, int argc)
@@ -90,10 +89,7 @@ int command_handle_add(struct request *req, const char **argv, int argc)
 
 	password = strdup(argv[4]);
 
-	// if (!validate_password(password)) {
-		
-	// }
-	if (err_count != 0) 
+	if (err_count != 0)
 		goto cleanup;
 
 	request_param_set(req, "site", site);
@@ -103,6 +99,7 @@ int command_handle_add(struct request *req, const char **argv, int argc)
 	return 0;
 
 cleanup:
+	fprintf(stderr, "Cleanup: %d \n", err_count);
 
 	free(site);
 	free(email);
@@ -118,7 +115,7 @@ int command_handle_del(struct request *req, const char **argv, int argc)
 		return -1;
 	}
 
-	if (req == NULL) 
+	if (req == NULL)
 		return -1;
 
 	char *id;
@@ -136,7 +133,6 @@ int command_handle_del(struct request *req, const char **argv, int argc)
 
 	return 0;
 }
-
 
 int command_handle_update(struct request *req, const char **argv, int argc)
 {
@@ -176,12 +172,7 @@ int command_handle_update(struct request *req, const char **argv, int argc)
 
 	password = strdup(argv[5]);
 
-	// if (!validate_password(email)) {
-	// 	fprintf(stderr, "Invaild Password \n");
-	// 	err_count++;
-	// }
-
-	if (err_count != 0) 
+	if (err_count != 0)
 		goto cleanup;
 
 	request_param_set(req, "id", id);
@@ -215,22 +206,21 @@ int command_handle_find(struct request *req, const char **argv, int argc)
 	char *param = strdup(argv[2]);
 	char *value = strdup(argv[3]);
 
-	for (int i = 0; i < FIND_TYPES; ++i)
-	{
+	for (int i = 0; i < FIND_TYPES; ++i) {
 		if (strcmp(param, finds[i]) == 0) {
 			if (command_validate_find_value(value, i) == -1) {
 				fprintf(stderr, "Invaild Parameters\n");
 				return -1;
 			}
-			request_param_set(req, "type", param);	
-			request_param_set(req, param, value);	
+
+			request_param_set(req, "type", param);
+			request_param_set(req, param, value);
 
 			return 0;
 		}
 	}
 
 	return -1;
-
 }
 
 int command_handle_print(struct request *req, const char **argv, int argc)
@@ -248,39 +238,38 @@ int command_handle_init(struct request *req, const char **argv, int argc)
 
 int command_get_index(const char *cmd, int flags)
 {
-	switch(flags)
-	{
-		case BY_CMD :
-			for (int i = 0; commands[i].cmd; ++i) {
-				if (strcmp(cmd, commands[i].cmd) == 0)
-					return i;
-			}
+	switch (flags) {
+	case BY_CMD:
+		for (int i = 0; commands[i].cmd; ++i) {
+			if (strcmp(cmd, commands[i].cmd) == 0)
+				return i;
+		}
 
-			return -1;
+		return -1;
 
-		case BY_URI :
-			for (int i = 0; commands[i].uri; ++i) {
-				if (strcmp(cmd, commands[i].uri) == 0)
-					return i;
-			}
+	case BY_URI:
+		for (int i = 0; commands[i].uri; ++i) {
+			if (strcmp(cmd, commands[i].uri) == 0)
+				return i;
+		}
 
-			return -1;
+		return -1;
 
-		default :
+	default:
 
-			return -1;
+		return -1;
 	}
-
-
 }
 
 static bool command_is_valid(const char *command)
 {
 	char *cmd_cp, *cmd_cpp;
+	
 	if ((cmd_cp = strdup(command)) == NULL) {
 		fprintf(stderr, "[!] command error\n");
 		return false;
 	}
+
 	str_ltrim(cmd_cp);
 	cmd_cpp = cmd_cp;
 
@@ -305,24 +294,15 @@ cleanup:
 
 static int command_validate_find_value(char *value, int mode)
 {
-	switch (mode)
-	{
-		case 0 :
-			if (!validate_number(value))
-				return -1;
-				break;
-
-		case 1 :
-			if (!validate_site(value))
-				return -1;
-				break;
-
-		case 2 :
-			if (!validate_email(value))
-				return -1;
-				break;
-
-		return 0;
+	switch (mode) {
+		case 0:
+			return validate_number(value) ? 0 : -1;
+		case 1:
+			return validate_site(value) ? 0 : -1;
+		case 2:
+			return validate_email(value) ? 0 : -1;
+		default:
+			return -1;
 	}
 }
 

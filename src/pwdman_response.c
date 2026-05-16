@@ -40,6 +40,8 @@ int pwdman_response_handle_error(struct collection *col)
 		puts(res->msg);
 		write(res->client, res->msg, strlen(res->msg));
 	}
+
+	return 0;
 }
 
 int pwdman_response_handle_print(struct collection *col)

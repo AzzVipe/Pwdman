@@ -37,8 +37,8 @@ int pwdman_request_handle_add(struct collection *col)
 		return -1;
 	}
 
-	if(!pwdman_add(req)) {
-		col->response->status = PWDMAN_ERROR;		
+	if (!pwdman_add(req)) {
+		col->response->status = PWDMAN_ERROR;
 		return -1;
 	}
 
@@ -46,7 +46,6 @@ int pwdman_request_handle_add(struct collection *col)
 
 	return 0;
 }
-
 
 int pwdman_request_handle_del(struct collection *col)
 {
@@ -57,12 +56,12 @@ int pwdman_request_handle_del(struct collection *col)
 		return -1;
 	}
 
-	if(!pwdman_count_by_id(req)) {
+	if (!pwdman_count_by_id(req)) {
 		col->response->status = PWDMAN_ERRIDNOTFOUND;
 		return -1;
 	}
 
-	if(!pwdman_delete(req)) {
+	if (!pwdman_delete(req)) {
 		col->response->status = PWDMAN_ERROR;
 		return -1;
 	}
@@ -87,7 +86,7 @@ int pwdman_request_handle_update(struct collection *col)
 		return -1;
 	}
 
-	if(!pwdman_update(req)) {
+	if (!pwdman_update(req)) {
 		col->response->status = PWDMAN_ERROR;
 		return -1;
 	}
@@ -111,25 +110,25 @@ int pwdman_request_handle_find(struct collection *col)
 
 	res->list = list_new(sizeof(struct pwdman), NULL);
 
-	switch(find) 
+	switch (find)
 	{
-		case FIND_BY_ID:
-			if (pwdman_request_handle_id(col) == -1)
-				return -1;
+	case FIND_BY_ID:
+		if (pwdman_request_handle_id(col) == -1)
+			return -1;
 
-			break;
+		break;
 
-		case FIND_BY_SITE:
-			if (pwdman_request_handle_site(col) == -1)
-				return-1;
+	case FIND_BY_SITE:
+		if (pwdman_request_handle_site(col) == -1)
+			return -1;
 
-			break;
+		break;
 
-		case FIND_BY_EMAIL:
-			if (pwdman_request_handle_email(col) == -1)
-				return -1;
+	case FIND_BY_EMAIL:
+		if (pwdman_request_handle_email(col) == -1)
+			return -1;
 
-			break;
+		break;
 	}
 
 	col->response->status = PWDMAN_SUCCESSFIND;
@@ -143,18 +142,17 @@ int pwdman_request_handle_print(struct collection *col)
 		col->response->status = PWDMAN_ERROR;
 		return -1;
 	}
-	
+
 	col->response->status = PWDMAN_SUCCESS;
 	return 0;
 }
 
 static int pwdman_request_find(const char *type)
 {
-	const char finds[][32] = { 
-		"id",
-		"site",
-		"email"
-	};
+	const char finds[][32] = {
+			"id",
+			"site",
+			"email"};
 
 	for (int i = 0; finds[i]; ++i)
 	{
@@ -171,37 +169,39 @@ static int pwdman_request_handle_id(struct collection *col)
 		col->response->status = PWDMAN_ERRINVALIDID;
 		return -1;
 	}
-
-	if(!pwdman_find_by_id(col->request, col->response->list)) {
+	if (!pwdman_find_by_id(col->request, col->response->list)) {
 		col->response->status = PWDMAN_ERRIDNOTFOUND;
 		return -1;
 	}
+
+	return 0;
 }
 
 static int pwdman_request_handle_site(struct collection *col)
 {
-
-	if (!(validate_site(request_param_get(col->request, "site")))) {
+	if (!validate_site(request_param_get(col->request, "site"))) {
 		col->response->status = PWDMAN_ERRINVALIDSITE;
 		return -1;
 	}
-
-	if(!pwdman_find_by_site(col->request, col->response->list)) {
+	if (!pwdman_find_by_site(col->request, col->response->list)) {
 		col->response->status = PWDMAN_ERRSITENOTFOUND;
 		return -1;
 	}
+
+	return 0;
 }
 
 static int pwdman_request_handle_email(struct collection *col)
 {
-
-	if (!(validate_email(request_param_get(col->request, "email")))) {
+	if (!validate_email(request_param_get(col->request, "email"))) {
 		col->response->status = PWDMAN_ERRINVALIDEMAIL;
 		return -1;
 	}
 
-	if(!pwdman_find_by_email(col->request, col->response->list)) {
+	if (!pwdman_find_by_email(col->request, col->response->list)) {
 		col->response->status = PWDMAN_ERREMAILNOTFOUND;
 		return -1;
 	}
+
+	return 0;
 }
