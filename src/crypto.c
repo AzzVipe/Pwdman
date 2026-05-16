@@ -29,7 +29,7 @@ static void hex_to_bytes(const char *hex, unsigned char *out, int len)
 bool crypto_init(void)
 {
   char passphrase[128];
-  printf("Master passphrase: ");
+  
   fgets(passphrase, sizeof(passphrase), stdin);
   passphrase[strcspn(passphrase, "\n")] = 0;
 

@@ -43,7 +43,6 @@ void database_create_app(void)
 	sqlite3_exec(conn, info_table, NULL, NULL, NULL);
 }
 
-// Only for DDL (CREATE TABLE etc.) — never call with user input
 bool database_exec(const char *sql)
 {
 	char *err = NULL;

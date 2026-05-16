@@ -7,6 +7,7 @@
 #include <crypto.h>
 
 void server_init(void);
+static void print_banner(void);
 
 int main(int argc, char *argv[])
 {
@@ -16,14 +17,15 @@ int main(int argc, char *argv[])
 	char buf[MAXLINE];
 	fd_set allset, rset;
 
+	server_init();
+
+	print_banner();
+	
 	if (!crypto_init()) {
 		fprintf(stderr, "Failed to initialise crypto\n");
 		return -1;
 	}
 
-	server_init();
-
-	// Daemon_init(argv[0]);
 
 	listenfd = Uxd_listen(UNIXPATH);
 	
@@ -93,4 +95,27 @@ void server_init(void)
 	if (stat(filename, &stats) == -1 && errno == ENOENT) {
 		database_create_app();
 	}
+}
+
+static void print_banner(void)
+{
+	printf("\033[1;34m"); // blue
+	printf("\n");
+	printf(" ██████╗ ██╗    ██╗██████╗ ███╗   ███╗ █████╗ ███╗   ██╗\n");
+	printf(" ██╔══██╗██║    ██║██╔══██╗████╗ ████║██╔══██╗████╗  ██║\n");
+	printf(" ██████╔╝██║ █╗ ██║██║  ██║██╔████╔██║███████║██╔██╗ ██║\n");
+	printf(" ██╔═══╝ ██║███╗██║██║  ██║██║╚██╔╝██║██╔══██║██║╚██╗██║\n");
+	printf(" ██║     ╚███╔███╔╝██████╔╝██║ ╚═╝ ██║██║  ██║██║ ╚████║\n");
+	printf(" ╚═╝      ╚══╝╚══╝ ╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝\n");
+	printf("\033[0m");
+	printf("\033[90m LOCAL PASSWORD MANAGER  •  AES-256-GCM\n");
+	printf(" by \033[34mAzmat Ali\033[0m\n");
+	printf("\033[90m ─────────────────────────────────────────────────────────\033[0m\n");
+	printf(" \033[32m✔\033[0m \033[90mstorage\033[0m   SQLite  →  .pwdman.db\n");
+	printf(" \033[32m✔\033[0m \033[90mcipher \033[0m   AES-256-GCM  +  PBKDF2-SHA256\n");
+	printf(" \033[32m✔\033[0m \033[90msocket \033[0m   Unix domain  →  /tmp/pwdman.sock\n");
+	printf(" \033[32m✔\033[0m \033[90maccess \033[0m   OS file permissions\n");
+	printf("\033[90m ─────────────────────────────────────────────────────────\033[0m\n");
+	printf("\033[90m enter master passphrase to unlock vault\033[0m\n");
+	printf(" \033[34mpassphrase\033[0m ");
 }
