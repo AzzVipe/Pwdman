@@ -1,20 +1,21 @@
-#include<stdio.h>
-#include<stdlib.h>
-#include<string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include<iter.h>
-#include<pwdman.h>
-#include<database.h>
-#include<command.h>
-#include<pwdman_response.h>
+#include <iter.h>
+#include <crypto.h>
+#include <pwdman.h>
+#include <db_stmt.h>
+#include <database.h>
+#include <command.h>
+#include <pwdman_response.h>
 
 static bool pwdman_storage_add(struct pwdman *temp);
 static bool pwdman_storage_update(struct pwdman *temp);
 static bool pwdman_get_list(List *list);
 static void pwdman_prepare_struct(struct request *req, struct pwdman *temp, int state);
 static void destroyer(void *data);
-
-int callback(void *list, int count, char **data, char **columns);
+static int pwdman_row_cb(void *list, sqlite3_stmt *stmt);
 
 void pwdman_request_handle(char *buf, int clientfd)
 {
@@ -35,18 +36,17 @@ void pwdman_request_handle(char *buf, int clientfd)
 	}
 
 	// call handler
-	if(commands[index].req_handle(&col) == -1) {
-		fprintf(stderr, "request_handle : Error\n" );
+	if (commands[index].req_handle(&col) == -1) {
+		fprintf(stderr, "request_handle : Error\n");
 		pwdman_response_handle_error(&col);
 		return;
 	}
-	
+
 	// responses
-	if(commands[index].res_handle(&col) == -1) {
-		fprintf(stderr, "response_handle : Error\n" );
+	if (commands[index].res_handle(&col) == -1) {
+		fprintf(stderr, "response_handle : Error\n");
 		return;
 	}
-
 }
 
 bool pwdman_add(struct request *req)
@@ -65,64 +65,58 @@ bool pwdman_update(struct request *req)
 	pwdman_prepare_struct(req, &temp, PWDMAN_UPDATE);
 
 	return pwdman_storage_update(&temp);
-
 }
 
 bool pwdman_delete(struct request *req)
 {
-	int id;
-	char sql[BUFFSIZE];
-	const char sql_buf[] = "DELETE FROM " INFO_TABLE " WHERE id = %d";
+	int id = atoi(request_param_get(req, "id"));
 
-	id = atoi(request_param_get(req, "id"));
-	sprintf(sql, sql_buf, id);
-
-	return database_cud(sql);
+	return db_exec_stmt("DELETE FROM " INFO_TABLE " WHERE id=?", "i", id);
 }
 
 bool pwdman_find_by_email(struct request *req, List *list)
 {
-	char sql[BUFFSIZE];
-	const char sql_buf[] = "SELECT * FROM " INFO_TABLE " WHERE email LIKE '%%%s%%' ";
+	const char *email = request_param_get(req, "email");
+	char pattern[256];
 
-	sprintf(sql, sql_buf, request_param_get(req, "email"));
+	snprintf(pattern, sizeof(pattern), "%%%s%%", email);
 
-	return database_select(sql, (void *)list, callback);
-
+	return db_query_stmt("SELECT * FROM " INFO_TABLE " WHERE email LIKE ?", 
+		list, pwdman_row_cb, "s", pattern
+	) && list->size > 0;
 }
 
 bool pwdman_find_by_site(struct request *req, List *list)
 {
-	char sql[BUFFSIZE];
-	const char sql_buf[] = "SELECT * FROM " INFO_TABLE " WHERE site LIKE '%%%s%%' ";
-
-	sprintf(sql, sql_buf, request_param_get(req, "site"));
-
-	return database_select(sql, (void *)list, callback) && list->size;
+	const char *site = request_param_get(req, "site");
+	char pattern[256];
+	
+	snprintf(pattern, sizeof(pattern), "%%%s%%", site);
+	
+	return db_query_stmt("SELECT * FROM " INFO_TABLE " WHERE site LIKE ?",
+		list, pwdman_row_cb, "s", pattern
+	) && list->size > 0;
 }
 
 bool pwdman_find_by_id(struct request *req, List *list)
 {
-	char sql[BUFFSIZE];
-	const char sql_buf[] = "SELECT * FROM " INFO_TABLE " WHERE id=%d";
+	int id = atoi(request_param_get(req, "id"));
 
-	sprintf(sql, sql_buf, atoi(request_param_get(req, "id")));
-
-	return database_select(sql, (void *)list, callback) && list->size;
+	return db_query_stmt("SELECT * FROM " INFO_TABLE " WHERE id=?",
+		list, pwdman_row_cb, "i", id
+	) && list->size > 0;
 }
 
 bool pwdman_count_by_id(struct request *req)
 {
 	List *temp_list = list_new(sizeof(struct pwdman), NULL);
-
 	pwdman_find_by_id(req, temp_list);
 
-	if (list_isempty(temp_list) == 1) {
-		fprintf(stderr, "list_isempty check\n" );
-		return false;
-	}
+	bool found = !list_isempty(temp_list);
 
-	return true;
+	list_destroy(&temp_list);
+
+	return found;
 }
 
 List *pwdman_print_all(void)
@@ -141,61 +135,87 @@ List *pwdman_print_all(void)
 
 static bool pwdman_storage_add(struct pwdman *temp)
 {
-	char sql[BUFFSIZE];
-	const char sql_buf[] = "INSERT INTO " INFO_TABLE " (site, email, password) VALUES('%s', '%s', '%s')";
+	char *ct, *iv, *tag;
 
-	sprintf(sql, sql_buf, temp->site, temp->email, temp->password);
-
-	if (!database_cud(sql)) {
-		printf("ERROR\n");
+	if (!crypto_encrypt(temp->password, &ct, &iv, &tag))
 		return false;
-	}
 
-	return true;
+	bool ok = db_exec_stmt(
+		"INSERT INTO " INFO_TABLE " (site, email, password, iv, tag) VALUES(?,?,?,?,?)",
+		"sssss", temp->site, temp->email, ct, iv, tag);
 
+	free(ct);
+	free(iv);
+	free(tag);
+
+	return ok;
 }
 
 static bool pwdman_storage_update(struct pwdman *temp)
 {
-	char sql[BUFFSIZE];
-	const char sql_buf[] = "UPDATE " INFO_TABLE " SET (site, email, password) = ('%s', '%s', '%s') WHERE id = '%d'";
+	char *ct, *iv, *tag;
 
-	sprintf(sql, sql_buf, temp->site, temp->email, temp->password, temp->id);
-
-	if (!database_cud(sql)) {
-		printf("ERROR\n");
+	if (!crypto_encrypt(temp->password, &ct, &iv, &tag))
 		return false;
-	}
 
-	return true;
+	bool ok = db_exec_stmt(
+		"UPDATE " INFO_TABLE " SET site=?, email=?, password=?, iv=?, tag=? WHERE id=?",
+		"sssssi", temp->site, temp->email, ct, iv, tag, temp->id);
 
+	free(ct);
+	free(iv);
+	free(tag);
+
+	return ok;
 }
 
 static void pwdman_prepare_struct(struct request *req, struct pwdman *temp, int state)
 {
-	switch(state) {
-
-		case PWDMAN_ADD :
+	switch (state) {
+		case PWDMAN_ADD:
 			temp->site = request_param_get(req, "site");
 			temp->email = request_param_get(req, "email");
 			temp->password = request_param_get(req, "password");
+
 			break;
 
-		case PWDMAN_UPDATE :
+		case PWDMAN_UPDATE:
 			temp->id = atoi(request_param_get(req, "id"));
 			temp->site = request_param_get(req, "site");
 			temp->email = request_param_get(req, "email");
 			temp->password = request_param_get(req, "password");
+
 			break;
 	}
-
 }
 
 static bool pwdman_get_list(List *list)
 {
-	const char sql[] = "SELECT * FROM " INFO_TABLE ;
+	return db_query_stmt("SELECT * FROM " INFO_TABLE, list, pwdman_row_cb, NULL);
+}
 
-	return database_select(sql, (void *)list, callback) && list->size;
+// Callback
+static int pwdman_row_cb(void *list, sqlite3_stmt *stmt)
+{
+	struct pwdman temp = {0};
+	char *plaintext = NULL;
+
+	temp.id = sqlite3_column_int(stmt, 0);
+	temp.site = strdup((char *)sqlite3_column_text(stmt, 1));
+	temp.email = strdup((char *)sqlite3_column_text(stmt, 2));
+
+	const char *ct = (char *)sqlite3_column_text(stmt, 3);
+	const char *iv = (char *)sqlite3_column_text(stmt, 4);
+	const char *tag = (char *)sqlite3_column_text(stmt, 5);
+
+	if (!crypto_decrypt(ct, iv, tag, &plaintext))
+		temp.password = strdup("[decrypt failed]");
+	else
+		temp.password = plaintext;
+
+	list_push((List *)list, &temp);
+
+	return 0;
 }
 
 static void destroyer(void *data)
@@ -205,19 +225,4 @@ static void destroyer(void *data)
 	free(((struct pwdman *)data)->password);
 
 	free(data);
-}
-
-int callback(void *list, int count, char **data, char **columns)
-{
-    int idx;
-	struct pwdman temp = {0};
-
-    temp.id = atoi(data[0]);
-    temp.site = strdup(data[1]);
-    temp.email = strdup(data[2]);
-    temp.password = strdup(data[3]);
-
-    list_push((List *)list, (void *)&temp);
-
-    return 0;
 }
