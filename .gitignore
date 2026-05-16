@@ -1,10 +1,22 @@
+# compiled binaries
 client
 server
 test
-objs_refresh.sh
+
+# object files from src/
 obj/
+*.o
+
+# exception: lib/ has no source files
+!lib/*.o
+
+# database files
 .pwdman.db
+.pwdman_test.db
+
+# dot files and dot directories
 .*
 !.gitignore
-*.o
-pwdman
+
+# internal build helper
+objs_refresh.sh
