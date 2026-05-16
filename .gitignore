@@ -1,10 +1,10 @@
 client
 server
+test
 objs_refresh.sh
 obj/
 .pwdman.db
 .*
 !.gitignore
 *.o
-test.c
 pwdman
