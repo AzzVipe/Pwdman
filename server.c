@@ -3,8 +3,8 @@
 #include <error.h>
 #include <sock_lib.h>
 #include <database.h>
-#include <user.h>
 #include <pwdman.h>
+#include <crypto.h>
 
 void server_init(void);
 
@@ -16,10 +16,17 @@ int main(int argc, char *argv[])
 	char buf[MAXLINE];
 	fd_set allset, rset;
 
+	if (!crypto_init()) {
+		fprintf(stderr, "Failed to initialise crypto\n");
+		return -1;
+	}
+
 	server_init();
+
 	// Daemon_init(argv[0]);
-	
+
 	listenfd = Uxd_listen(UNIXPATH);
+	
 	if (listenfd == -1) {
 		perror("listenfd");
 		exit(-1);
@@ -32,17 +39,17 @@ int main(int argc, char *argv[])
 
 	for (int i = 0; i < FD_SETSIZE; ++i)
 		clients[i] = -1;
-	
-	for (; ;)
-	{
+
+	for (;;) {
 		rset = allset;
 		nready = select(maxfd + 1, &rset, NULL, NULL, NULL);
 
 		if (FD_ISSET(listenfd, &rset)) {
-			if ((connfd = accept(listenfd, (struct sockaddr *) NULL, NULL)) < 0) {
+			if ((connfd = accept(listenfd, (struct sockaddr *)NULL, NULL)) < 0) {
 				perror("accept error");
 				continue;
 			}
+
 			for (int i = 0; i < FD_SETSIZE; i++) {
 				if (clients[i] == -1) {
 					clients[i] = connfd;
@@ -63,10 +70,13 @@ int main(int argc, char *argv[])
 			if (FD_ISSET(clients[i], &allset)) {
 				if ((bytes_read = read(clients[i], buf, sizeof(buf))) > 0) {
 					buf[bytes_read] = 0;
-					fprintf(stderr, "%s\n", buf );
+					fprintf(stderr, "%s\n", buf);
 					pwdman_request_handle(buf, clients[i]);
 				}
+
+				FD_CLR(clients[i], &allset);
 				close(clients[i]);
+				clients[i] = -1;
 				nready--;
 			}
 		}
@@ -82,6 +92,5 @@ void server_init(void)
 
 	if (stat(filename, &stats) == -1 && errno == ENOENT) {
 		database_create_app();
-		user_init();
 	}
 }
