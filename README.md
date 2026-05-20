@@ -1,8 +1,9 @@
 # 🔐 pwdman
 
-A personal, local password manager built in C — using a Unix socket server,
-AES-256-GCM encryption, and SQLite storage. No cloud. No third-party services.
-Your passwords never leave your machine.
+A local password manager written in C using Unix sockets, SQLite, and
+AES-256-GCM encryption.
+
+All data stays on your machine.
 
 ---
 
@@ -12,16 +13,16 @@ Your passwords never leave your machine.
 
 ## ✨ Features
 
-- 🔒 **AES-256-GCM encryption** — every stored password is encrypted at rest
+- 🔒 **AES-256-GCM encryption** - every stored password is encrypted at rest
   with an authenticated cipher; tampering is detected
-- 🔑 **PBKDF2 key derivation** — your master passphrase is never stored; the
+- 🔑 **PBKDF2 key derivation** - your master passphrase is never stored; the
   encryption key is derived fresh each session with 200,000 SHA-256 iterations
-- 🗄️ **SQLite storage** — lightweight, single-file, zero-dependency database
-- 🔌 **Unix domain socket IPC** — client/server architecture over a local
+- 🗄️ **SQLite storage** - lightweight, single-file, zero-dependency database
+- 🔌 **Unix domain socket IPC** - client/server architecture over a local
   socket; no network exposure
-- ✅ **Input validation** — email, site, and ID fields are validated before any
+- ✅ **Input validation** - email, site, and ID fields are validated before any
   operation
-- 🛡️ **Prepared statements** — all SQL uses `sqlite3_bind_*`; no string
+- 🛡️ **Prepared statements** - all SQL uses `sqlite3_bind_*`; no string
   interpolation, no injection
 
 ---
@@ -49,8 +50,26 @@ Your passwords never leave your machine.
 ```
 
 The server handles all encryption and database operations. The client is
-intentionally thin — it parses CLI arguments, builds a request, sends it over
+intentionally thin - it parses CLI arguments, builds a request, sends it over
 the socket, and prints the response.
+
+---
+
+## 📝 Implementation Notes
+
+This project was built primarily to deepen my understanding of:
+
+- Unix domain sockets and IPC
+- AES-GCM authenticated encryption
+- SQLite prepared statements
+- event-driven server loops using `select()`
+- secure handling of user credentials in C
+
+One challenge during development was designing a simple request/response
+protocol while keeping encryption isolated to the server process.
+
+Another area I spent time on was input validation and avoiding unsafe string
+handling patterns common in C projects.
 
 ---
 
@@ -139,7 +158,7 @@ This produces two binaries in the project root: `server` and `client`.
 ```
 
 On first run, the server creates `.pwdman.db` and prompts for a master
-passphrase. This passphrase is used to derive the AES-256 encryption key — **it
+passphrase. This passphrase is used to derive the AES-256 encryption key - **it
 is never stored anywhere**. You will need to enter the same passphrase every
 time you start the server.
 
@@ -225,7 +244,7 @@ Deleted Successfully
 | Salt              | Fixed per-build (single-user local tool)                 |
 | Storage           | Ciphertext + IV + GCM tag stored in SQLite               |
 | SQL               | Prepared statements via `sqlite3_bind_*` throughout      |
-| Transport         | AF_UNIX socket — local machine only, no network exposure |
+| Transport         | AF_UNIX socket - local machine only, no network exposure |
 | Master passphrase | Never stored; derived key lives in process memory only   |
 
 **Threat model:** pwdman is designed to protect against an attacker who gains
@@ -260,4 +279,4 @@ security issue please open a private issue rather than a public one.
 
 ## 📄 License
 
-MIT License — see [LICENSE](LICENSE) for details.
+MIT License - see [LICENSE](LICENSE) for details.
